@@ -13,7 +13,7 @@ function AdminLogin() {
       const res = await API.post('/auth/login', credentials);
       localStorage.setItem('adminToken', res.data.token);
       navigate('/admin/dashboard');
-    } catch (err) {
+    } catch {
       setError('Invalid username or password');
     }
   };

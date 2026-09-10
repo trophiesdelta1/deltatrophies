@@ -1,46 +1,51 @@
-import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Helmet } from 'react-helmet-async';
-import { 
-  FiPhone, 
-  FiMail, 
-  FiMapPin, 
-  FiUser, 
-  FiMessageSquare, 
-  FiSend, 
-  FiCheckCircle, 
-  FiPhoneCall 
-} from 'react-icons/fi';
-import { FaWhatsapp } from 'react-icons/fa';
-import API from '../api/axios';
-import { CONTACT } from '../config/contact';
+import { useState } from "react";
+import { motion } from "framer-motion";
+import {
+  FiPhone,
+  FiMail,
+  FiMapPin,
+  FiUser,
+  FiMessageSquare,
+  FiSend,
+  FiCheckCircle,
+  FiPhoneCall,
+} from "react-icons/fi";
+import { FaWhatsapp } from "react-icons/fa";
+import API from "../api/axios";
+import { CONTACT } from "../config/contact";
+import SeoHead from "../components/SeoHead";
 
 const salesTeam = [
-  { name: 'Komal', phone: '92165-77789' },
-  { name: 'Navneet', phone: '87596-66665' },
-  { name: 'Nidhi', phone: '95924-13333' },
-  { name: 'Pooja Sharma', phone: '77194-36916' },
-  { name: 'Sweety', phone: '95179-11665' },
+  { name: "Komal", phone: "92165-77789" },
+  { name: "Navneet", phone: "87596-66665" },
+  { name: "Nidhi", phone: "95924-13333" },
+  { name: "Pooja Sharma", phone: "77194-36916" },
+  { name: "Sweety", phone: "95179-11665" },
 ];
 
 function Contact() {
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    message: '',
+    name: "",
+    email: "",
+    phone: "",
+    message: "",
   });
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError("");
     try {
-      await API.post('/inquiries', formData);
+      await API.post("/inquiries", formData);
       setSubmitted(true);
-    } catch (err) {
-      console.error('Submission error:', err);
+    } catch (requestError) {
+      setError(
+        requestError.response?.data?.error ||
+          "Unable to send your message. Please try again.",
+      );
     } finally {
       setLoading(false);
     }
@@ -48,20 +53,18 @@ function Contact() {
 
   return (
     <div className="bg-[#0b0c10] text-white min-h-screen selection:bg-gold selection:text-black">
-      <Helmet>
-        <title>Contact Us — Delta Industries Jalandhar | Trophy Manufacturer</title>
-        <meta
-          name="description"
-          content="Contact Delta Industries for custom trophy orders, bulk enquiries and dealership. Trophy manufacturer in Jalandhar, Punjab."
-        />
-      </Helmet>
+      <SeoHead
+        title="Contact Delta Industries | Trophy Manufacturer in Jalandhar"
+        description="Contact Delta Industries for custom trophy orders, bulk enquiries and dealership information in Jalandhar, Punjab."
+        canonicalPath="/contact"
+      />
 
       {/* Decorative subtle background radial glow */}
       <div className="relative overflow-hidden pt-32 pb-24 px-6 lg:px-12 max-w-7xl mx-auto">
         <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-gold/5 blur-[120px] rounded-full pointer-events-none" />
 
         {/* Header Section */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
@@ -71,18 +74,21 @@ function Contact() {
             Get In Touch
           </span>
           <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-white mb-4">
-            Let's Craft Something <span className="text-transparent bg-clip-text bg-gradient-to-r from-gold via-amber-200 to-gold">Remarkable</span>
+            Let's Craft Something{" "}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-gold via-amber-200 to-gold">
+              Remarkable
+            </span>
           </h1>
           <p className="text-white/60 text-sm md:text-base leading-relaxed">
-            Have a question about custom trophies, bulk corporate orders, or dealership opportunities? Connect directly with our team.
+            Have a question about custom trophies, bulk corporate orders, or
+            dealership opportunities? Connect directly with our team.
           </p>
         </motion.div>
 
         {/* Main Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          
           {/* Left Column: Direct Info, Sales Team & WhatsApp */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
@@ -94,30 +100,34 @@ function Contact() {
                 Direct Channels
               </h2>
 
-              <a 
-                href={`tel:${CONTACT.phone}`} 
+              <a
+                href={`tel:${CONTACT.phone}`}
                 className="flex items-start gap-4 p-3 rounded-xl hover:bg-white/[0.03] transition-colors group"
               >
                 <div className="p-3 bg-gold/10 text-gold rounded-xl border border-gold/20 group-hover:bg-gold group-hover:text-black transition-all">
                   <FiPhone className="w-5 h-5" />
                 </div>
                 <div>
-                  <p className="text-xs text-white/50 uppercase tracking-wider font-semibold">Phone Support</p>
+                  <p className="text-xs text-white/50 uppercase tracking-wider font-semibold">
+                    Phone Support
+                  </p>
                   <p className="text-white font-medium text-sm md:text-base group-hover:text-gold transition-colors">
                     {CONTACT.phoneDisplay}
                   </p>
                 </div>
               </a>
 
-              <a 
-                href={`mailto:${CONTACT.email}`} 
+              <a
+                href={`mailto:${CONTACT.email}`}
                 className="flex items-start gap-4 p-3 rounded-xl hover:bg-white/[0.03] transition-colors group"
               >
                 <div className="p-3 bg-gold/10 text-gold rounded-xl border border-gold/20 group-hover:bg-gold group-hover:text-black transition-all">
                   <FiMail className="w-5 h-5" />
                 </div>
                 <div>
-                  <p className="text-xs text-white/50 uppercase tracking-wider font-semibold">Email Enquiries</p>
+                  <p className="text-xs text-white/50 uppercase tracking-wider font-semibold">
+                    Email Enquiries
+                  </p>
                   <p className="text-white font-medium text-sm md:text-base group-hover:text-gold transition-colors">
                     {CONTACT.email}
                   </p>
@@ -129,7 +139,9 @@ function Contact() {
                   <FiMapPin className="w-5 h-5" />
                 </div>
                 <div>
-                  <p className="text-xs text-white/50 uppercase tracking-wider font-semibold">Headquarters</p>
+                  <p className="text-xs text-white/50 uppercase tracking-wider font-semibold">
+                    Headquarters
+                  </p>
                   <p className="text-white font-medium text-sm">
                     Jalandhar, Punjab, India
                   </p>
@@ -144,7 +156,9 @@ function Contact() {
                 className="w-full flex items-center justify-center gap-3 bg-[#25D366]/15 hover:bg-[#25D366] text-[#25D366] hover:text-white border border-[#25D366]/30 font-semibold py-3.5 px-4 rounded-xl transition-all duration-300 group shadow-md"
               >
                 <FaWhatsapp className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                <span className="text-sm tracking-wide">Quick Chat on WhatsApp</span>
+                <span className="text-sm tracking-wide">
+                  Quick Chat on WhatsApp
+                </span>
               </a>
             </div>
 
@@ -164,12 +178,14 @@ function Contact() {
                         {member.name.charAt(0)}
                       </div>
                       <div>
-                        <p className="text-white text-sm font-medium">{member.name}</p>
+                        <p className="text-white text-sm font-medium">
+                          {member.name}
+                        </p>
                         <p className="text-white/40 text-xs">{member.phone}</p>
                       </div>
                     </div>
                     <a
-                      href={`tel:+91${member.phone.replace(/-/g, '')}`}
+                      href={`tel:+91${member.phone.replace(/\D/g, "")}`}
                       className="inline-flex items-center gap-1.5 text-gold hover:text-black border border-gold/30 hover:bg-gold px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wider uppercase transition-all duration-200"
                     >
                       <FiPhoneCall className="w-3.5 h-3.5" />
@@ -182,7 +198,7 @@ function Contact() {
           </motion.div>
 
           {/* Right Column: Form & Map */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
@@ -191,20 +207,28 @@ function Contact() {
             {/* Inquiry Form */}
             <div className="bg-[#121318] border border-white/[0.08] rounded-2xl p-8 shadow-xl relative overflow-hidden">
               <div className="mb-6">
-                <h2 className="text-xl font-bold text-white">Send Us a Message</h2>
-                <p className="text-white/50 text-xs mt-1">Fill out the form below and we will respond within 24 business hours.</p>
+                <h2 className="text-xl font-bold text-white">
+                  Send Us a Message
+                </h2>
+                <p className="text-white/50 text-xs mt-1">
+                  Fill out the form below and we will respond within 24 business
+                  hours.
+                </p>
               </div>
 
               {submitted ? (
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   className="bg-gold/5 border border-gold/20 rounded-xl p-8 text-center my-8"
                 >
                   <FiCheckCircle className="text-gold w-14 h-14 mx-auto mb-4" />
-                  <h3 className="text-white text-xl font-bold mb-2">Inquiry Received</h3>
+                  <h3 className="text-white text-xl font-bold mb-2">
+                    Inquiry Received
+                  </h3>
                   <p className="text-white/60 text-sm max-w-sm mx-auto">
-                    Thank you for reaching out. Our team will review your requirements and get back to you shortly.
+                    Thank you for reaching out. Our team will review your
+                    requirements and get back to you shortly.
                   </p>
                   <button
                     onClick={() => setSubmitted(false)}
@@ -215,10 +239,14 @@ function Contact() {
                 </motion.div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-4">
+                  {error && <p className="text-red-400 text-sm">{error}</p>}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Name */}
                     <div className="space-y-1.5">
-                      <label htmlFor="name" className="text-xs font-semibold tracking-wider text-white/70 uppercase">
+                      <label
+                        htmlFor="name"
+                        className="text-xs font-semibold tracking-wider text-white/70 uppercase"
+                      >
                         Full Name
                       </label>
                       <div className="relative">
@@ -229,7 +257,9 @@ function Contact() {
                           type="text"
                           placeholder="e.g. Rahul Sharma"
                           value={formData.name}
-                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                          onChange={(e) =>
+                            setFormData({ ...formData, name: e.target.value })
+                          }
                           required
                           className="w-full bg-[#181a20] border border-white/[0.1] rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-white/20 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-all"
                         />
@@ -238,7 +268,10 @@ function Contact() {
 
                     {/* Email */}
                     <div className="space-y-1.5">
-                      <label htmlFor="email" className="text-xs font-semibold tracking-wider text-white/70 uppercase">
+                      <label
+                        htmlFor="email"
+                        className="text-xs font-semibold tracking-wider text-white/70 uppercase"
+                      >
                         Email Address
                       </label>
                       <div className="relative">
@@ -249,7 +282,9 @@ function Contact() {
                           type="email"
                           placeholder="e.g. rahul@example.com"
                           value={formData.email}
-                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                          onChange={(e) =>
+                            setFormData({ ...formData, email: e.target.value })
+                          }
                           required
                           className="w-full bg-[#181a20] border border-white/[0.1] rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-white/20 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-all"
                         />
@@ -259,7 +294,10 @@ function Contact() {
 
                   {/* Phone */}
                   <div className="space-y-1.5">
-                    <label htmlFor="phone" className="text-xs font-semibold tracking-wider text-white/70 uppercase">
+                    <label
+                      htmlFor="phone"
+                      className="text-xs font-semibold tracking-wider text-white/70 uppercase"
+                    >
                       Phone / Mobile Number
                     </label>
                     <div className="relative">
@@ -270,7 +308,9 @@ function Contact() {
                         type="tel"
                         placeholder="e.g. +91 98765 43210"
                         value={formData.phone}
-                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        onChange={(e) =>
+                          setFormData({ ...formData, phone: e.target.value })
+                        }
                         required
                         className="w-full bg-[#181a20] border border-white/[0.1] rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-white/20 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-all"
                       />
@@ -279,7 +319,10 @@ function Contact() {
 
                   {/* Message */}
                   <div className="space-y-1.5">
-                    <label htmlFor="message" className="text-xs font-semibold tracking-wider text-white/70 uppercase">
+                    <label
+                      htmlFor="message"
+                      className="text-xs font-semibold tracking-wider text-white/70 uppercase"
+                    >
                       Message / Custom Requirement
                     </label>
                     <div className="relative">
@@ -290,7 +333,9 @@ function Contact() {
                         rows={4}
                         placeholder="Tell us about the trophy type, quantity, or specific customization needed..."
                         value={formData.message}
-                        onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                        onChange={(e) =>
+                          setFormData({ ...formData, message: e.target.value })
+                        }
                         required
                         className="w-full bg-[#181a20] border border-white/[0.1] rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-white/20 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-all resize-none"
                       />
@@ -322,7 +367,9 @@ function Contact() {
                 <p className="text-xs font-semibold tracking-widest text-gold uppercase">
                   Manufacturing Facility Location
                 </p>
-                <span className="text-[11px] text-white/40">Jalandhar, Punjab</span>
+                <span className="text-[11px] text-white/40">
+                  Jalandhar, Punjab
+                </span>
               </div>
               <div className="w-full h-64 rounded-xl overflow-hidden border border-white/[0.05]">
                 <iframe
@@ -338,7 +385,6 @@ function Contact() {
               </div>
             </div>
           </motion.div>
-
         </div>
       </div>
     </div>

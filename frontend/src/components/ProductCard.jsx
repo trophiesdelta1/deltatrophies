@@ -1,17 +1,37 @@
-import { Link } from 'react-router-dom';
-import getImageUrl from '../utils/getImageUrl';
+import { Link } from "react-router-dom";
+import getImageUrl, { getOptimizedImageUrl } from "../utils/getImageUrl";
+import { productPath } from "../config/seo";
 
-function ProductCard({ product }) {
+function ProductCard({ product, priority = false }) {
+  const originalImage = getImageUrl(product.images?.[0]);
+  const cardImage = getOptimizedImageUrl(product.images?.[0], {
+    width: 700,
+    height: 700,
+  });
+
   return (
-    <Link to={`/collections/${product.id}`}
-      className="border border-gold/20 hover:border-gold group transition-colors bg-darkbg">
-      
-      <div className="bg-white flex items-center justify-center overflow-hidden" 
-        style={{height: '280px'}}>
+    <Link
+      to={productPath(product)}
+      className="border border-gold/20 hover:border-gold group transition-colors bg-darkbg"
+    >
+      <div
+        className="bg-white flex items-center justify-center overflow-hidden"
+        style={{ height: "280px" }}
+      >
         {product.images && product.images[0] ? (
           <img
-            src={getImageUrl(product.images[0])}
-            alt={product.name}
+            src={cardImage}
+            alt={product.image_alt || product.name}
+            width="700"
+            height="700"
+            loading={priority ? "eager" : "lazy"}
+            fetchPriority={priority ? "high" : "auto"}
+            decoding="async"
+            onError={(event) => {
+              if (originalImage && event.currentTarget.src !== originalImage) {
+                event.currentTarget.src = originalImage;
+              }
+            }}
             className="w-full h-full object-contain p-4"
           />
         ) : (

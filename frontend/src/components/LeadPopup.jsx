@@ -6,6 +6,8 @@ function LeadPopup() {
   const location = useLocation();
   const [show, setShow] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -31,13 +33,17 @@ function LeadPopup() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSubmitting(true);
+    setError('');
     try {
       await API.post('/inquiries/lead', formData);
       localStorage.setItem('leadPopupSeen', 'true');
       setSubmitted(true);
       setTimeout(() => setShow(false), 2000);
-    } catch (err) {
-      console.error(err);
+    } catch (requestError) {
+      setError(requestError.response?.data?.error || 'Unable to submit. Please try again.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -75,6 +81,7 @@ function LeadPopup() {
             </p>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+              {error && <p className="text-red-400 text-sm">{error}</p>}
               <div>
                 <label htmlFor="popup-name" className="sr-only">Your Name</label>
                 <input
@@ -119,8 +126,9 @@ function LeadPopup() {
               </div>
               <button
                 type="submit"
-                className="bg-gold text-darkbg font-bold py-3 rounded tracking-widest uppercase text-sm hover:bg-gold/90 transition-colors">
-                Get Access
+                disabled={submitting}
+                className="bg-gold text-darkbg font-bold py-3 rounded tracking-widest uppercase text-sm hover:bg-gold/90 transition-colors disabled:opacity-50">
+                {submitting ? 'Submitting...' : 'Get Access'}
               </button>
             </form>
           </>

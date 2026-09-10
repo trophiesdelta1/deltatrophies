@@ -7,30 +7,21 @@ function Dashboard() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const token = localStorage.getItem('adminToken');
-    if (!token) {
-      navigate('/admin');
-      return;
-    }
+    const controller = new AbortController();
     const fetchStats = async () => {
       try {
-        const prodRes = await API.get('/products');
-        const leadsRes = await API.get('/inquiries/leads', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const inqRes = await API.get('/inquiries/all', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const response = await API.get('/admin/stats', { signal: controller.signal });
         setStats({
-          products: prodRes.data.products.length,
-          leads: leadsRes.data.leads.length,
-          inquiries: inqRes.data.inquiries.length
+          products: response.data.stats.products,
+          leads: response.data.stats.leads,
+          inquiries: response.data.stats.inquiries
         });
-      } catch (err) {
-        console.error(err);
+      } catch (error) {
+        if (error.code !== 'ERR_CANCELED') console.error(error);
       }
     };
-    fetchStats();
+    void fetchStats();
+    return () => controller.abort();
   }, []);
 
   const handleLogout = () => {

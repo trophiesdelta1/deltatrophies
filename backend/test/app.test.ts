@@ -1,0 +1,39 @@
+import request from 'supertest';
+import { describe, expect, it } from 'vitest';
+import { createApp } from '../src/app.js';
+
+const app = createApp();
+
+describe('application shell', () => {
+  it('reports liveness without requiring the database', async () => {
+    const response = await request(app).get('/api/v1/health/live');
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ success: true, status: 'alive' });
+    expect(response.headers['x-content-type-options']).toBe('nosniff');
+    expect(response.headers['x-request-id']).toBeTypeOf('string');
+  });
+
+  it('reports readiness separately from liveness', async () => {
+    const response = await request(app).get('/api/v1/health/ready');
+
+    expect(response.status).toBe(503);
+    expect((response.body as { status: unknown }).status).toBe('not_ready');
+  });
+
+  it('returns a stable JSON error contract for unknown routes', async () => {
+    const response = await request(app).get('/missing');
+
+    expect(response.status).toBe(404);
+    expect(response.body).toMatchObject({ success: false, code: 'ROUTE_NOT_FOUND' });
+  });
+
+  it('rejects invalid login input before hitting the database', async () => {
+    const response = await request(app)
+      .post('/api/v1/auth/login')
+      .send({ username: 'x', password: 'short' });
+
+    expect(response.status).toBe(422);
+    expect(response.body).toMatchObject({ success: false, code: 'VALIDATION_ERROR' });
+  });
+});

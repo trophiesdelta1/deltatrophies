@@ -1,91 +1,267 @@
-import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { Helmet } from 'react-helmet-async';
-import API from '../api/axios';
-import getImageUrl from '../utils/getImageUrl';
+import { useState, useEffect } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
+import API from "../api/axios";
+import getImageUrl, { getOptimizedImageUrl } from "../utils/getImageUrl";
+import { jsonLd, productPath, SITE_NAME, SITE_URL } from "../config/seo";
+import ProductCard from "../components/ProductCard";
+
+function restoreOriginalImage(event, path) {
+  const originalImage = getImageUrl(path);
+  if (originalImage && event.currentTarget.src !== originalImage) {
+    event.currentTarget.src = originalImage;
+  }
+}
 
 function ProductDetail() {
-  const { id } = useParams();
+  const { id, slug } = useParams();
+  const navigate = useNavigate();
   const [product, setProduct] = useState(null);
+  const [relatedProducts, setRelatedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
   const [formData, setFormData] = useState({
-    name: '', email: '', phone: '', message: ''
+    name: "",
+    email: "",
+    phone: "",
+    message: "",
   });
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   useEffect(() => {
+    const controller = new AbortController();
     const fetchProduct = async () => {
+      setLoading(true);
+      setProduct(null);
+      setRelatedProducts([]);
+      setSelectedImage(0);
       try {
-        const res = await API.get(`/products/${id}`);
+        const res = await API.get(`/products/${id}`, {
+          signal: controller.signal,
+        });
         setProduct(res.data.product);
-      } catch (err) {
-        console.error(err);
+      } catch (error) {
+        if (error.code !== "ERR_CANCELED") console.error(error);
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     };
-    fetchProduct();
+    void fetchProduct();
+    return () => controller.abort();
   }, [id]);
+
+  useEffect(() => {
+    if (!product) return;
+    const expectedPath = productPath(product);
+    if (slug !== product.slug) navigate(expectedPath, { replace: true });
+  }, [navigate, product, slug]);
+
+  useEffect(() => {
+    if (!product?.category_slug) return undefined;
+    const controller = new AbortController();
+    const fetchRelated = async () => {
+      try {
+        const response = await API.get("/products", {
+          params: { category: product.category_slug, page: 1, limit: 5 },
+          signal: controller.signal,
+        });
+        setRelatedProducts(
+          response.data.products
+            .filter((item) => item.id !== product.id)
+            .slice(0, 4),
+        );
+      } catch (error) {
+        if (error.code !== "ERR_CANCELED") console.error(error);
+      }
+    };
+    void fetchRelated();
+    return () => controller.abort();
+  }, [product]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSubmitting(true);
+    setSubmitError("");
     try {
-      await API.post('/inquiries', {
+      await API.post("/inquiries", {
         ...formData,
-        product_id: product.id
+        product_id: product.id,
       });
       setSubmitted(true);
-    } catch (err) {
-      console.error(err);
+    } catch (requestError) {
+      setSubmitError(
+        requestError.response?.data?.error ||
+          "Unable to submit enquiry. Please try again.",
+      );
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  if (loading) return (
-    <div className="bg-darkbg min-h-screen flex items-center justify-center">
-      <p className="text-white/30 tracking-widest uppercase text-sm">Loading...</p>
-    </div>
-  );
+  if (loading)
+    return (
+      <div className="bg-darkbg min-h-screen flex items-center justify-center">
+        <p className="text-white/30 tracking-widest uppercase text-sm">
+          Loading...
+        </p>
+      </div>
+    );
 
-  if (!product) return (
-    <div className="bg-darkbg min-h-screen flex items-center justify-center">
-      <p className="text-white/30 tracking-widest uppercase text-sm">Product not found</p>
-    </div>
-  );
+  if (!product)
+    return (
+      <div className="bg-darkbg min-h-screen flex items-center justify-center">
+        <Helmet>
+          <title>Product Not Found | Delta Industries</title>
+          <meta name="robots" content="noindex,follow" />
+        </Helmet>
+        <p className="text-white/30 tracking-widest uppercase text-sm">
+          Product not found
+        </p>
+      </div>
+    );
+
+  const canonicalPath = productPath(product);
+  const canonicalUrl = `${SITE_URL}${canonicalPath}`;
+  const primaryImage = getImageUrl(product.images?.[0]);
+  const seoDescription = product.seo_description;
+  const productSchema = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "@id": `${canonicalUrl}#product`,
+    url: canonicalUrl,
+    name: product.name,
+    description: seoDescription,
+    image: product.images?.map(getImageUrl).filter(Boolean) ?? [],
+    sku: product.sku || undefined,
+    category: product.category_name || undefined,
+    material: product.material || undefined,
+    brand: {
+      "@type": "Brand",
+      name: SITE_NAME,
+    },
+    manufacturer: {
+      "@type": "Organization",
+      name: SITE_NAME,
+      url: SITE_URL,
+    },
+  };
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Collections",
+        item: `${SITE_URL}/collections`,
+      },
+      ...(product.category_name && product.category_slug
+        ? [
+            {
+              "@type": "ListItem",
+              position: 3,
+              name: product.category_name,
+              item: `${SITE_URL}/collections?category=${encodeURIComponent(product.category_slug)}`,
+            },
+          ]
+        : []),
+      {
+        "@type": "ListItem",
+        position: product.category_name && product.category_slug ? 4 : 3,
+        name: product.name,
+        item: canonicalUrl,
+      },
+    ],
+  };
 
   return (
     <div className="bg-darkbg min-h-screen pt-24">
       <Helmet>
-        <title>{product.name} | Delta Industries Jalandhar</title>
+        <title>
+          {product.seo_title || `${product.name} | Delta Industries`}
+        </title>
+        <meta name="description" content={seoDescription} />
         <meta
-          name="description"
-          content={product.description || `${product.name} — premium ${product.category_name || 'trophy'} from Delta Industries, Jalandhar. Custom awards and corporate mementos since 1998.`}
+          name="robots"
+          content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1"
         />
+        <link rel="canonical" href={canonicalUrl} />
+        <meta property="og:type" content="product" />
+        <meta property="og:locale" content="en_IN" />
+        <meta property="og:site_name" content={SITE_NAME} />
+        <meta property="og:title" content={product.name} />
+        <meta property="og:description" content={seoDescription} />
+        <meta property="og:url" content={canonicalUrl} />
+        {primaryImage && <meta property="og:image" content={primaryImage} />}
+        {primaryImage && (
+          <meta property="og:image:alt" content={product.image_alt} />
+        )}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={product.name} />
+        <meta name="twitter:description" content={seoDescription} />
+        {primaryImage && <meta name="twitter:image" content={primaryImage} />}
+        {primaryImage && (
+          <meta name="twitter:image:alt" content={product.image_alt} />
+        )}
+        <script type="application/ld+json">{jsonLd(productSchema)}</script>
+        <script type="application/ld+json">{jsonLd(breadcrumbSchema)}</script>
       </Helmet>
 
       <div className="max-w-7xl mx-auto px-6 py-12">
-
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-white/30 text-xs tracking-wider uppercase mb-10">
-          <Link to="/" className="hover:text-gold transition-colors">Home</Link>
+          <Link to="/" className="hover:text-gold transition-colors">
+            Home
+          </Link>
           <span>/</span>
-          <Link to="/collections" className="hover:text-gold transition-colors">Collections</Link>
+          <Link to="/collections" className="hover:text-gold transition-colors">
+            Collections
+          </Link>
+          {product.category_name && product.category_slug && (
+            <>
+              <span>/</span>
+              <Link
+                to={`/collections?category=${encodeURIComponent(product.category_slug)}`}
+                className="hover:text-gold transition-colors"
+              >
+                {product.category_name}
+              </Link>
+            </>
+          )}
           <span>/</span>
           <span className="text-gold">{product.name}</span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-
           {/* Images */}
           <div>
             <div
               className="bg-white border border-gold/20 flex items-center justify-center mb-4"
-              style={{ height: '600px' }}>
+              style={{ height: "600px" }}
+            >
               {product.images && product.images.length > 0 ? (
                 <img
-                  src={getImageUrl(product.images[selectedImage])}
-                  alt={product.name}
-                  style={{ maxHeight: '600px', maxWidth: '100%', objectFit: 'contain', padding: '16px' }}
+                  src={getOptimizedImageUrl(product.images[selectedImage], {
+                    width: 1600,
+                    height: 1600,
+                  })}
+                  alt={product.image_alt || product.name}
+                  width="1600"
+                  height="1600"
+                  decoding="async"
+                  fetchPriority="high"
+                  onError={(event) =>
+                    restoreOriginalImage(event, product.images[selectedImage])
+                  }
+                  style={{
+                    maxHeight: "600px",
+                    maxWidth: "100%",
+                    objectFit: "contain",
+                    padding: "16px",
+                  }}
                 />
               ) : (
                 <p className="text-darkbg/30 text-sm">No Image Available</p>
@@ -100,12 +276,21 @@ function ProductDetail() {
                     onClick={() => setSelectedImage(index)}
                     className={`w-16 h-16 border bg-white overflow-hidden ${
                       selectedImage === index
-                        ? 'border-gold'
-                        : 'border-gold/20 hover:border-gold/50'
-                    }`}>
+                        ? "border-gold"
+                        : "border-gold/20 hover:border-gold/50"
+                    }`}
+                  >
                     <img
-                      src={getImageUrl(img)}
-                      alt={`${product.name} ${index + 1}`}
+                      src={getOptimizedImageUrl(img, {
+                        width: 200,
+                        height: 200,
+                      })}
+                      alt={`${product.image_alt || product.name} - view ${index + 1}`}
+                      width="200"
+                      height="200"
+                      loading="lazy"
+                      decoding="async"
+                      onError={(event) => restoreOriginalImage(event, img)}
                       className="w-full h-full object-contain p-1"
                     />
                   </button>
@@ -135,7 +320,8 @@ function ProductDetail() {
             {product.material && (
               <div className="border border-gold/20 px-4 py-3 mb-8 inline-block">
                 <p className="text-white/30 text-xs tracking-wider uppercase">
-                  Material: <span className="text-gold">{product.material}</span>
+                  Material:{" "}
+                  <span className="text-gold">{product.material}</span>
                 </p>
               </div>
             )}
@@ -156,8 +342,13 @@ function ProductDetail() {
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+                  {submitError && (
+                    <p className="text-red-400 text-sm">{submitError}</p>
+                  )}
                   <div>
-                    <label htmlFor="enquiry-name" className="sr-only">Your Name</label>
+                    <label htmlFor="enquiry-name" className="sr-only">
+                      Your Name
+                    </label>
                     <input
                       id="enquiry-name"
                       name="name"
@@ -165,13 +356,17 @@ function ProductDetail() {
                       placeholder="Your Name"
                       autoComplete="name"
                       value={formData.name}
-                      onChange={(e) => setFormData({...formData, name: e.target.value})}
+                      onChange={(e) =>
+                        setFormData({ ...formData, name: e.target.value })
+                      }
                       required
                       className="w-full bg-white/5 border border-gold/20 px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-gold text-sm"
                     />
                   </div>
                   <div>
-                    <label htmlFor="enquiry-email" className="sr-only">Email Address</label>
+                    <label htmlFor="enquiry-email" className="sr-only">
+                      Email Address
+                    </label>
                     <input
                       id="enquiry-email"
                       name="email"
@@ -179,13 +374,17 @@ function ProductDetail() {
                       placeholder="Email Address"
                       autoComplete="email"
                       value={formData.email}
-                      onChange={(e) => setFormData({...formData, email: e.target.value})}
+                      onChange={(e) =>
+                        setFormData({ ...formData, email: e.target.value })
+                      }
                       required
                       className="w-full bg-white/5 border border-gold/20 px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-gold text-sm"
                     />
                   </div>
                   <div>
-                    <label htmlFor="enquiry-phone" className="sr-only">Phone Number</label>
+                    <label htmlFor="enquiry-phone" className="sr-only">
+                      Phone Number
+                    </label>
                     <input
                       id="enquiry-phone"
                       name="phone"
@@ -193,35 +392,64 @@ function ProductDetail() {
                       placeholder="Phone Number"
                       autoComplete="tel"
                       value={formData.phone}
-                      onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                      onChange={(e) =>
+                        setFormData({ ...formData, phone: e.target.value })
+                      }
                       required
                       className="w-full bg-white/5 border border-gold/20 px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-gold text-sm"
                     />
                   </div>
                   <div>
-                    <label htmlFor="enquiry-message" className="sr-only">Your message (optional)</label>
+                    <label htmlFor="enquiry-message" className="sr-only">
+                      Your message (optional)
+                    </label>
                     <textarea
                       id="enquiry-message"
                       name="message"
                       placeholder="Your message (optional)"
                       autoComplete="off"
                       value={formData.message}
-                      onChange={(e) => setFormData({...formData, message: e.target.value})}
+                      onChange={(e) =>
+                        setFormData({ ...formData, message: e.target.value })
+                      }
                       rows={3}
                       className="w-full bg-white/5 border border-gold/20 px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-gold text-sm resize-none"
                     />
                   </div>
                   <button
                     type="submit"
-                    className="bg-gold text-darkbg font-bold py-3 tracking-widest uppercase text-sm hover:bg-gold/90 transition-colors">
-                    Send Enquiry
+                    disabled={submitting}
+                    className="bg-gold text-darkbg font-bold py-3 tracking-widest uppercase text-sm hover:bg-gold/90 transition-colors disabled:opacity-50"
+                  >
+                    {submitting ? "Submitting..." : "Send Enquiry"}
                   </button>
                 </form>
               )}
             </div>
-
           </div>
         </div>
+
+        {relatedProducts.length > 0 && (
+          <section
+            className="mt-20 border-t border-gold/20 pt-10"
+            aria-labelledby="related-products"
+          >
+            <p className="mb-2 text-xs uppercase tracking-[0.3em] text-gold">
+              More to explore
+            </p>
+            <h2
+              id="related-products"
+              className="mb-7 text-2xl font-bold text-white"
+            >
+              Related {product.category_name}
+            </h2>
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-6">
+              {relatedProducts.map((item) => (
+                <ProductCard key={item.id} product={item} />
+              ))}
+            </div>
+          </section>
+        )}
       </div>
     </div>
   );
