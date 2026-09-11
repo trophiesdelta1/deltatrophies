@@ -10,6 +10,7 @@ const Gallery = lazy(() => import("../pages/Gallery"));
 const Heritage = lazy(() => import("../pages/Heritage"));
 const Contact = lazy(() => import("../pages/Contact"));
 const Distributors = lazy(() => import("../pages/Distributors"));
+const BulkEnquiry = lazy(() => import("../pages/BulkEnquiry"));
 const AdminLogin = lazy(() => import("../pages/admin/Login"));
 const Dashboard = lazy(() => import("../pages/admin/Dashboard"));
 const ManageProducts = lazy(() => import("../pages/admin/ManageProducts"));
@@ -29,6 +30,7 @@ function AppRoutes() {
           <Route path="heritage" element={<Heritage />} />
           <Route path="contact" element={<Contact />} />
           <Route path="distributors" element={<Distributors />} />
+          <Route path="bulk-enquiry" element={<BulkEnquiry />} />
           <Route path="admin" element={<AdminLogin />} />
           <Route element={<ProtectedRoute />}>
             <Route path="admin/dashboard" element={<Dashboard />} />

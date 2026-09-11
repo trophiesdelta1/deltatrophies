@@ -1,31 +1,33 @@
-import { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
-import API from '../api/axios';
+import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
+import API from "../api/axios";
 
 function LeadPopup() {
   const location = useLocation();
+  const isExcludedPage =
+    location.pathname.startsWith("/admin") ||
+    location.pathname === "/bulk-enquiry";
   const [show, setShow] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: ''
+    name: "",
+    email: "",
+    phone: "",
   });
 
   useEffect(() => {
-    const isAdminPage = location.pathname.startsWith('/admin');
-    if (isAdminPage) return;
+    if (isExcludedPage) return;
 
-    const alreadySeen = localStorage.getItem('leadPopupSeen');
+    const alreadySeen = localStorage.getItem("leadPopupSeen");
     if (!alreadySeen) {
       const timer = setTimeout(() => {
         setShow(true);
       }, 3000);
       return () => clearTimeout(timer);
     }
-  }, [location.pathname]);
+  }, [isExcludedPage]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -34,34 +36,37 @@ function LeadPopup() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
-    setError('');
+    setError("");
     try {
-      await API.post('/inquiries/lead', formData);
-      localStorage.setItem('leadPopupSeen', 'true');
+      await API.post("/inquiries/lead", formData);
+      localStorage.setItem("leadPopupSeen", "true");
       setSubmitted(true);
       setTimeout(() => setShow(false), 2000);
     } catch (requestError) {
-      setError(requestError.response?.data?.error || 'Unable to submit. Please try again.');
+      setError(
+        requestError.response?.data?.error ||
+          "Unable to submit. Please try again.",
+      );
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleClose = () => {
-    localStorage.setItem('leadPopupSeen', 'true');
+    localStorage.setItem("leadPopupSeen", "true");
     setShow(false);
   };
 
-  if (!show) return null;
+  if (!show || isExcludedPage) return null;
 
   return (
     <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center px-4">
       <div className="bg-darkbg border border-gold/30 rounded-lg p-8 w-full max-w-md relative">
-
         <button
           onClick={handleClose}
           aria-label="Close popup"
-          className="absolute top-4 right-4 text-white/50 hover:text-gold text-xl">
+          className="absolute top-4 right-4 text-white/50 hover:text-gold text-xl"
+        >
           ✕
         </button>
 
@@ -69,7 +74,9 @@ function LeadPopup() {
           <div className="text-center py-6">
             <p className="text-gold text-2xl mb-2">✓</p>
             <p className="text-white text-lg">Thank you!</p>
-            <p className="text-white/50 text-sm mt-1">We'll be in touch soon.</p>
+            <p className="text-white/50 text-sm mt-1">
+              We'll be in touch soon.
+            </p>
           </div>
         ) : (
           <>
@@ -83,7 +90,9 @@ function LeadPopup() {
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
               {error && <p className="text-red-400 text-sm">{error}</p>}
               <div>
-                <label htmlFor="popup-name" className="sr-only">Your Name</label>
+                <label htmlFor="popup-name" className="sr-only">
+                  Your Name
+                </label>
                 <input
                   id="popup-name"
                   type="text"
@@ -97,7 +106,9 @@ function LeadPopup() {
                 />
               </div>
               <div>
-                <label htmlFor="popup-email" className="sr-only">Email Address</label>
+                <label htmlFor="popup-email" className="sr-only">
+                  Email Address
+                </label>
                 <input
                   id="popup-email"
                   type="email"
@@ -111,7 +122,9 @@ function LeadPopup() {
                 />
               </div>
               <div>
-                <label htmlFor="popup-phone" className="sr-only">Phone Number</label>
+                <label htmlFor="popup-phone" className="sr-only">
+                  Phone Number
+                </label>
                 <input
                   id="popup-phone"
                   type="tel"
@@ -127,8 +140,9 @@ function LeadPopup() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="bg-gold text-darkbg font-bold py-3 rounded tracking-widest uppercase text-sm hover:bg-gold/90 transition-colors disabled:opacity-50">
-                {submitting ? 'Submitting...' : 'Get Access'}
+                className="bg-gold text-darkbg font-bold py-3 rounded tracking-widest uppercase text-sm hover:bg-gold/90 transition-colors disabled:opacity-50"
+              >
+                {submitting ? "Submitting..." : "Get Access"}
               </button>
             </form>
           </>

@@ -43,6 +43,12 @@ export const STATIC_PAGE_SEO = {
       "Contact Delta Industries for custom trophy orders, bulk enquiries and dealership information in Jalandhar, Punjab.",
     canonicalPath: "/contact",
   },
+  "bulk-enquiry": {
+    title: "Bulk Trophy Enquiry | Request a Quotation | Delta Industries",
+    description:
+      "Send a qualified bulk trophy and awards enquiry to Delta Industries. Suitable for institutions, corporate events, sports events and resellers.",
+    canonicalPath: "/bulk-enquiry",
+  },
 };
 
 export function apiBaseUrl() {

@@ -64,6 +64,12 @@ function Footer() {
               >
                 Contact
               </Link>
+              <Link
+                to="/bulk-enquiry"
+                className="text-white/50 hover:text-gold text-sm transition-colors"
+              >
+                Bulk Enquiry
+              </Link>
             </div>
           </div>
 
