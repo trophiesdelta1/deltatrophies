@@ -41,6 +41,10 @@ Run `npm run check` at the repository root before release. It performs backend t
 
 For production, use a unique 32+ character JWT secret, exact frontend origins, TLS-enabled MongoDB Atlas, Cloudinary credentials, and a secret manager supplied by the hosting platform. Build and run the API directly with `npm run build --prefix backend` and `npm start --prefix backend`.
 
+For the Vercel frontend, set `VITE_API_URL` to the public HTTPS backend origin (no `/api/v1` suffix). The build now fails when this is missing or points to localhost; both the browser catalogue and server-rendered product metadata/sitemap depend on it. Set backend `APP_ORIGINS` to the exact production frontend origin, `https://www.deltatrophies.com` (plus any explicitly supported preview origins). The canonical host is `www.deltatrophies.com`; the apex domain should continue redirecting there.
+
+After deployment, confirm that a product URL returns its current product name in `<title>`, an old product slug redirects to the current slug, and `/sitemap.xml` includes all active products and categories. Run `npm run seo:audit --prefix backend` against the production catalogue before release; it must report zero errors and warnings.
+
 Run `npm run db:indexes --prefix backend` as an explicit release step whenever a model index changes; production runtime intentionally does not build indexes during startup.
 
 Never commit `.env` files or deploy credentials pasted into chat/history. Rotate any exposed database password before launch.

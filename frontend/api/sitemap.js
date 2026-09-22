@@ -47,47 +47,54 @@ export default async function handler(_request, response) {
   );
   const baseUrl = apiBaseUrl();
 
-  if (baseUrl) {
-    try {
-      const [products, categoryPayload] = await Promise.all([
-        fetchAllProducts(baseUrl),
-        fetchJson(`${baseUrl}/categories`),
-      ]);
-      for (const category of categoryPayload.categories || []) {
-        entries.push(
-          sitemapEntry({
-            path: `/collections?category=${encodeURIComponent(category.slug)}`,
-          }),
-        );
-        if (category.slug === "la-aca-ra-f-models") {
-          for (const model of ["LA", "F", "RA", "ACA"]) {
-            entries.push(
-              sitemapEntry({
-                path: `/collections?category=${encodeURIComponent(category.slug)}&model=${model.toLowerCase()}`,
-              }),
-            );
-          }
+  if (!baseUrl) {
+    response.setHeader("Cache-Control", "no-store");
+    response.status(503).send("Sitemap temporarily unavailable");
+    return;
+  }
+
+  try {
+    const [products, categoryPayload] = await Promise.all([
+      fetchAllProducts(baseUrl),
+      fetchJson(`${baseUrl}/categories`),
+    ]);
+    for (const category of categoryPayload.categories || []) {
+      entries.push(
+        sitemapEntry({
+          path: `/collections?category=${encodeURIComponent(category.slug)}`,
+        }),
+      );
+      if (category.slug === "la-aca-ra-f-models") {
+        for (const model of ["LA", "F", "RA", "ACA"]) {
+          entries.push(
+            sitemapEntry({
+              path: `/collections?category=${encodeURIComponent(category.slug)}&model=${model.toLowerCase()}`,
+            }),
+          );
         }
       }
-      for (const product of products) {
-        if (!product.id || !product.slug) continue;
-        entries.push(
-          sitemapEntry({
-            path: productPath(product),
-            lastModified: product.updated_at,
-            images: (product.images || []).map((url) => ({
-              url,
-              title: product.image_alt || product.name,
-            })),
-          }),
-        );
-      }
-    } catch (error) {
-      console.error(
-        "Catalogue sitemap fallback:",
-        error instanceof Error ? error.message : error,
+    }
+    for (const product of products) {
+      if (!product.id || !product.slug) continue;
+      entries.push(
+        sitemapEntry({
+          path: productPath(product),
+          lastModified: product.updated_at,
+          images: (product.images || []).map((url) => ({
+            url,
+            title: product.image_alt || product.name,
+          })),
+        }),
       );
     }
+  } catch (error) {
+    console.error(
+      "Catalogue sitemap unavailable:",
+      error instanceof Error ? error.message : error,
+    );
+    response.setHeader("Cache-Control", "no-store");
+    response.status(503).send("Sitemap temporarily unavailable");
+    return;
   }
 
   response.setHeader("Content-Type", "application/xml; charset=utf-8");

@@ -17,6 +17,10 @@ function ProductDetail() {
   const { id, slug } = useParams();
   const navigate = useNavigate();
   const [product, setProduct] = useState(null);
+  const [productNavigation, setProductNavigation] = useState({
+    previous: null,
+    next: null,
+  });
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
@@ -35,13 +39,19 @@ function ProductDetail() {
     const fetchProduct = async () => {
       setLoading(true);
       setProduct(null);
+      setProductNavigation({ previous: null, next: null });
       setRelatedProducts([]);
       setSelectedImage(0);
+      setSubmitted(false);
+      setSubmitError("");
       try {
         const res = await API.get(`/products/${id}`, {
           signal: controller.signal,
         });
         setProduct(res.data.product);
+        setProductNavigation(
+          res.data.navigation || { previous: null, next: null },
+        );
       } catch (error) {
         if (error.code !== "ERR_CANCELED") console.error(error);
       } finally {
@@ -311,6 +321,44 @@ function ProductDetail() {
               <p className="text-white/30 text-xs tracking-wider mb-6">
                 SKU: {product.sku}
               </p>
+            )}
+
+            {(productNavigation.previous || productNavigation.next) && (
+              <nav
+                aria-label="Browse trophies"
+                className="grid grid-cols-2 gap-3 mb-8"
+              >
+                {productNavigation.previous ? (
+                  <a
+                    href={productPath(productNavigation.previous)}
+                    aria-label={`Previous trophy: ${productNavigation.previous.name}`}
+                    className="group w-full cursor-pointer border border-gold/30 px-4 py-3 text-left transition-colors hover:border-gold hover:bg-gold/10"
+                  >
+                    <span className="block text-[10px] uppercase tracking-[0.2em] text-gold">
+                      ← Previous Trophy
+                    </span>
+                    <span className="mt-1 block truncate text-sm text-white/70 group-hover:text-white">
+                      {productNavigation.previous.name}
+                    </span>
+                  </a>
+                ) : (
+                  <span aria-hidden="true" />
+                )}
+                {productNavigation.next && (
+                  <a
+                    href={productPath(productNavigation.next)}
+                    aria-label={`Next trophy: ${productNavigation.next.name}`}
+                    className="group w-full cursor-pointer border border-gold/30 bg-gold/5 px-4 py-3 text-right transition-colors hover:border-gold hover:bg-gold/10"
+                  >
+                    <span className="block text-[10px] uppercase tracking-[0.2em] text-gold">
+                      Next Trophy →
+                    </span>
+                    <span className="mt-1 block truncate text-sm text-white/70 group-hover:text-white">
+                      {productNavigation.next.name}
+                    </span>
+                  </a>
+                )}
+              </nav>
             )}
             {product.description && (
               <p className="text-white/50 text-sm leading-relaxed mb-8">

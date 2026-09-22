@@ -3,6 +3,7 @@ import { logger } from '../src/config/logger.js';
 import { CategoryModel } from '../src/models/category.model.js';
 import { ProductModel } from '../src/models/product.model.js';
 import { buildProductSeoDescription, buildProductSeoTitle } from '../src/utils/seo.js';
+import { updateSlug } from '../src/utils/slug.js';
 
 interface AuditIssue {
   id: string;
@@ -26,11 +27,22 @@ async function main(): Promise<void> {
   const errors: AuditIssue[] = [];
   const warnings: AuditIssue[] = [];
 
-  for (const duplicate of duplicateValues(products.map((product) => product.name.toLowerCase()))) {
+  for (const duplicate of duplicateValues(
+    products.map((product) => buildProductSeoTitle(product.name, product.sku).toLowerCase()),
+  )) {
     errors.push({
       id: duplicate,
-      field: 'name',
-      message: 'Duplicate customer-facing product name',
+      field: 'seo_title',
+      message: 'Duplicate generated product SEO title',
+    });
+  }
+  for (const duplicate of duplicateValues(
+    products.map((product) => buildProductSeoDescription(product.name, product.sku).toLowerCase()),
+  )) {
+    errors.push({
+      id: duplicate,
+      field: 'seo_description',
+      message: 'Duplicate generated product SEO description',
     });
   }
   for (const duplicate of duplicateValues(products.map((product) => product.slug))) {
@@ -42,8 +54,8 @@ async function main(): Promise<void> {
     const category = categoryById.get(product.category.toString());
     const name = product.name.trim();
     const normalizedTerms = product.searchTerms.map((term) => term.toLowerCase());
-    const seoDescription = buildProductSeoDescription(name);
-    const seoTitle = buildProductSeoTitle(name);
+    const seoDescription = buildProductSeoDescription(name, product.sku);
+    const seoTitle = buildProductSeoTitle(name, product.sku);
 
     if (!category) errors.push({ id, field: 'category', message: 'Active category is missing' });
     if (!name || name.toLowerCase() === product.sku?.toLowerCase()) {
@@ -55,8 +67,20 @@ async function main(): Promise<void> {
     if (!/-[a-f\d]{8}$/i.test(product.slug)) {
       errors.push({ id, field: 'slug', message: 'Slug has no stable identity suffix' });
     }
+    if (product.slug !== updateSlug(product.slug, name, product.sku)) {
+      errors.push({ id, field: 'slug', message: 'Slug does not match the current product name' });
+    }
     if (!product.description?.trim()) {
       errors.push({ id, field: 'description', message: 'Product description is missing' });
+    } else if (
+      product.seoManaged &&
+      !product.description.toLowerCase().includes(name.toLowerCase())
+    ) {
+      errors.push({
+        id,
+        field: 'description',
+        message: 'Managed description has an outdated name',
+      });
     }
     if (product.images.length === 0) {
       errors.push({ id, field: 'images', message: 'Product has no image' });
@@ -101,6 +125,14 @@ async function main(): Promise<void> {
     activeCategories: categories.length,
     uniqueNames: new Set(products.map((product) => product.name.toLowerCase())).size,
     uniqueSlugs: new Set(products.map((product) => product.slug)).size,
+    uniqueSeoTitles: new Set(
+      products.map((product) => buildProductSeoTitle(product.name, product.sku).toLowerCase()),
+    ).size,
+    uniqueSeoDescriptions: new Set(
+      products.map((product) =>
+        buildProductSeoDescription(product.name, product.sku).toLowerCase(),
+      ),
+    ).size,
     errors,
     warnings,
   };

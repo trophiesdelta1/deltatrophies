@@ -53,6 +53,20 @@ export interface ProductListResult {
   };
 }
 
+export interface ProductNavigationItem {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+export interface ProductDetailsResult {
+  product: ProductDto;
+  navigation: {
+    previous: ProductNavigationItem | null;
+    next: ProductNavigationItem | null;
+  };
+}
+
 function toProductDto(product: ProductLean): ProductDto {
   const categoryName = product.category?.name ?? 'award';
   return {
@@ -68,12 +82,32 @@ function toProductDto(product: ProductLean): ProductDto {
     model_group: product.modelGroup ?? null,
     in_stock: product.inStock,
     images: product.images.map((image) => image.url),
-    seo_title: buildProductSeoTitle(product.name),
-    seo_description: buildProductSeoDescription(product.name),
+    seo_title: buildProductSeoTitle(product.name, product.sku),
+    seo_description: buildProductSeoDescription(product.name, product.sku),
     image_alt: `${product.name} - ${categoryName}`,
     created_at: product.createdAt,
     updated_at: product.updatedAt,
   };
+}
+
+function toProductNavigationItem(
+  product: Pick<Product, '_id' | 'name' | 'slug'> | null,
+): ProductNavigationItem | null {
+  if (!product) return null;
+  return {
+    id: product._id.toString(),
+    name: product.name,
+    slug: product.slug,
+  };
+}
+
+async function findActiveProduct(id: string): Promise<ProductLean> {
+  const document = await ProductModel.findOne({ _id: toObjectId(id), isActive: true })
+    .populate('category', 'name slug')
+    .lean()
+    .exec();
+  if (!document) throw new ApiError(404, 'PRODUCT_NOT_FOUND', 'Product not found');
+  return document as unknown as ProductLean;
 }
 
 interface ActiveCategory {
@@ -176,12 +210,54 @@ export async function listProducts(query: ProductListRequest['query']): Promise<
 }
 
 export async function getProduct(id: string): Promise<ProductDto> {
-  const document = await ProductModel.findOne({ _id: toObjectId(id), isActive: true })
-    .populate('category', 'name slug')
-    .lean()
-    .exec();
-  if (!document) throw new ApiError(404, 'PRODUCT_NOT_FOUND', 'Product not found');
-  return toProductDto(document as unknown as ProductLean);
+  return toProductDto(await findActiveProduct(id));
+}
+
+export async function getProductDetails(id: string): Promise<ProductDetailsResult> {
+  const product = await findActiveProduct(id);
+  if (!product.category) {
+    return {
+      product: toProductDto(product),
+      navigation: { previous: null, next: null },
+    };
+  }
+  const sharedFilter = {
+    category: product.category._id,
+    isActive: true,
+  };
+
+  const [previous, next] = await Promise.all([
+    ProductModel.findOne({
+      ...sharedFilter,
+      $or: [
+        { displayOrder: { $lt: product.displayOrder } },
+        { displayOrder: product.displayOrder, _id: { $lt: product._id } },
+      ],
+    })
+      .sort({ displayOrder: -1, _id: -1 })
+      .select('_id name slug')
+      .lean()
+      .exec(),
+    ProductModel.findOne({
+      ...sharedFilter,
+      $or: [
+        { displayOrder: { $gt: product.displayOrder } },
+        { displayOrder: product.displayOrder, _id: { $gt: product._id } },
+      ],
+    })
+      .sort({ displayOrder: 1, _id: 1 })
+      .select('_id name slug')
+      .lean()
+      .exec(),
+  ]);
+
+  return {
+    product: toProductDto(product),
+    navigation: {
+      previous: toProductNavigationItem(previous),
+      next: toProductNavigationItem(next),
+    },
+  };
 }
 
 export async function createProduct(

@@ -1,9 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import API from '../../api/axios';
+import {
+  isQuickEditEnabled,
+  setQuickEditEnabled,
+} from '../../utils/adminQuickEdit';
 
 function Dashboard() {
   const [stats, setStats] = useState({ products: 0, leads: 0, inquiries: 0 });
+  const [quickEdit, setQuickEdit] = useState(isQuickEditEnabled);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -26,7 +31,14 @@ function Dashboard() {
 
   const handleLogout = () => {
     localStorage.removeItem('adminToken');
+    setQuickEditEnabled(false);
     navigate('/admin');
+  };
+
+  const toggleQuickEdit = () => {
+    const enabled = !quickEdit;
+    setQuickEditEnabled(enabled);
+    setQuickEdit(enabled);
   };
 
   return (
@@ -57,6 +69,32 @@ function Dashboard() {
               <p className="text-gold text-4xl font-bold">{stat.value}</p>
             </div>
           ))}
+        </div>
+
+        <div className="mb-12 flex flex-col gap-5 border border-gold/25 bg-white/[0.03] p-6 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-gold text-xs font-semibold uppercase tracking-[0.2em]">
+              Temporary editing shortcut
+            </p>
+            <h2 className="mt-2 text-lg font-semibold text-white">
+              Save &amp; open next product
+            </h2>
+            <p className="mt-1 max-w-2xl text-sm text-white/55">
+              When on, press Enter in a product edit form to save it and open
+              the next product in the current catalogue list. Turns off when
+              you log out.
+            </p>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={quickEdit}
+            aria-label="Save and open next product"
+            onClick={toggleQuickEdit}
+            className={`shrink-0 border px-6 py-3 text-xs font-bold uppercase tracking-widest transition-colors ${quickEdit ? 'border-gold bg-gold text-darkbg' : 'border-gold/30 text-gold hover:border-gold'}`}
+          >
+            {quickEdit ? 'On' : 'Off'}
+          </button>
         </div>
 
         {/* Quick Actions */}

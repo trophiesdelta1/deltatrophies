@@ -151,14 +151,14 @@ function captureAttribution() {
 
 function SectionTitle({ number, children, className = "" }) {
   return (
-    <legend
-      className={`mt-1 mb-6 flex items-center gap-3 text-base font-semibold text-white sm:text-lg ${className}`}
+    <div
+      className={`mt-4 mb-6 flex items-center gap-3 text-base font-semibold text-white sm:text-lg ${className}`}
     >
       <span className="flex h-9 w-9 shrink-0 translate-y-[1px] items-center justify-center rounded-full border border-gold/40 bg-gold/10 text-xs font-bold text-gold">
         {number}
       </span>
       {children}
-    </legend>
+    </div>
   );
 }
 
@@ -683,7 +683,7 @@ function BulkEnquiry() {
             )}
           </fieldset>
 
-          <fieldset className="border-b border-white/10 p-5 sm:p-8">
+          <fieldset className="border-b border-white/10 px-5 pb-5 pt-7 sm:px-8 sm:pb-8 sm:pt-9">
             <SectionTitle number="02">
               How many pieces do you need? <span className="text-gold">*</span>
             </SectionTitle>
@@ -702,7 +702,7 @@ function BulkEnquiry() {
             <ErrorText id="quantity-error">{errors.quantity}</ErrorText>
           </fieldset>
 
-          <fieldset className="p-5 sm:p-8">
+          <fieldset className="px-5 pb-5 pt-7 sm:px-8 sm:pb-8 sm:pt-9">
             <SectionTitle number="03">Your contact details</SectionTitle>
             <p className="-mt-3 mb-6 text-xs text-white/35">
               Fields marked with <span className="text-gold">*</span> are

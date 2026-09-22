@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import API from "../../api/axios";
 import FilterSidebar from "../../components/FilterSidebar";
 import getImageUrl, { getOptimizedImageUrl } from "../../utils/getImageUrl";
+import { isQuickEditEnabled } from "../../utils/adminQuickEdit";
 
 const PAGE_SIZE = 24;
 const SPECIAL_CATEGORY_SLUG = "la-aca-ra-f-models";
@@ -50,6 +51,7 @@ function ManageProducts() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [catalogVersion, setCatalogVersion] = useState(0);
+  const [quickEdit] = useState(isQuickEditEnabled);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -215,7 +217,7 @@ function ManageProducts() {
     }
   };
 
-  const openEditModal = (product) => {
+  const openEditModal = (product, { clearName = false } = {}) => {
     const skuModelGroup = product.sku?.split("-")[0]?.toUpperCase();
     const inferredModelGroup = SPECIAL_MODEL_GROUPS.some(
       (group) => group.code === skuModelGroup,
@@ -223,7 +225,7 @@ function ManageProducts() {
       ? skuModelGroup
       : "";
     setEditForm({
-      name: product.name ?? "",
+      name: clearName ? "" : (product.name ?? ""),
       sku: product.sku ?? "",
       description: product.description ?? "",
       category_id: product.category_id ?? "",
@@ -238,11 +240,11 @@ function ManageProducts() {
   const handleUpdate = async (event) => {
     event.preventDefault();
     if (!editingProduct || updating) return;
-    const selectedCategory = categories.find(
+    const targetCategory = categories.find(
       (category) => category.id === editForm.category_id,
     );
     if (
-      selectedCategory?.slug === SPECIAL_CATEGORY_SLUG &&
+      targetCategory?.slug === SPECIAL_CATEGORY_SLUG &&
       !editForm.model_group
     ) {
       setEditError("Please select an award type.");
@@ -252,16 +254,54 @@ function ManageProducts() {
     setUpdating(true);
     setEditError("");
     try {
+      let nextProduct = null;
+      let nextPage = page;
+      let nextLookupFailed = false;
+      if (quickEdit) {
+        const currentIndex = products.findIndex(
+          (product) => product.id === editingProduct.id,
+        );
+        if (currentIndex >= 0 && currentIndex < products.length - 1) {
+          nextProduct = products[currentIndex + 1];
+        } else if (
+          currentIndex === products.length - 1 &&
+          page < pagination.pages
+        ) {
+          try {
+            const params = { page: page + 1, limit: PAGE_SIZE };
+            if (selectedCategory !== "all") params.category = selectedCategory;
+            if (debouncedSearch) params.search = debouncedSearch;
+            const response = await API.get("/products", { params });
+            nextProduct = response.data.products[0] ?? null;
+            if (nextProduct) nextPage = page + 1;
+          } catch {
+            nextLookupFailed = true;
+          }
+        }
+      }
+
       const payload = { ...editForm };
       if (editForm.description === (editingProduct.description ?? "")) {
         delete payload.description;
       }
-      if (selectedCategory?.slug !== SPECIAL_CATEGORY_SLUG) {
+      if (targetCategory?.slug !== SPECIAL_CATEGORY_SLUG) {
         delete payload.model_group;
       }
       await API.patch(`/products/${editingProduct.id}`, payload);
-      setEditingProduct(null);
-      setNotice("Product details updated successfully.");
+      if (quickEdit && nextProduct) {
+        if (nextPage !== page) setPage(nextPage);
+        openEditModal(nextProduct, { clearName: true });
+        setNotice("Product saved. Next product is ready to edit.");
+      } else {
+        setEditingProduct(null);
+        setNotice(
+          nextLookupFailed
+            ? "Product saved, but the next product could not be loaded. Please select it manually."
+            : quickEdit
+              ? "Product saved. No next product in this list."
+              : "Product details updated successfully.",
+        );
+      }
       setError("");
       refreshCatalog();
     } catch (requestError) {
@@ -340,6 +380,21 @@ function ManageProducts() {
             role="status"
           >
             {notice}
+          </p>
+        )}
+        {quickEdit && (
+          <p
+            className="mb-5 border border-gold/25 bg-gold/[0.06] px-4 py-3 text-sm text-gold"
+            role="status"
+          >
+            Save &amp; Next is on. Press Enter while editing to save and open
+            the next product with a blank name field.{" "}
+            <Link
+              to="/admin/dashboard"
+              className="ml-2 underline hover:text-white"
+            >
+              Turn off on Dashboard
+            </Link>
           </p>
         )}
 
@@ -549,6 +604,7 @@ function ManageProducts() {
             categories={categories}
             selectedCategory={selectedCategory}
             onCategoryChange={handleCategoryChange}
+            useButtons
           />
           <div className="flex-1 min-w-0">
             <div className="flex flex-col sm:flex-row gap-3 mb-5">
@@ -758,6 +814,7 @@ function ManageProducts() {
           }}
         >
           <div
+            key={editingProduct.id}
             className="w-full max-w-2xl overflow-hidden border border-gold/30 bg-[#0b0b0b] shadow-2xl shadow-black"
             role="dialog"
             aria-modal="true"
@@ -822,6 +879,7 @@ function ManageProducts() {
                   <input
                     autoFocus
                     required
+                    placeholder="Enter product name"
                     value={editForm.name}
                     onChange={(event) =>
                       setEditForm({ ...editForm, name: event.target.value })
@@ -942,12 +1000,18 @@ function ManageProducts() {
                     disabled={updating}
                     className="min-w-40 bg-gold px-5 py-3 text-xs font-bold uppercase tracking-wider text-darkbg transition-colors hover:bg-gold/90 disabled:opacity-50"
                   >
-                    {updating ? "Updating..." : "Update Product"}
+                    {updating
+                      ? "Updating..."
+                      : quickEdit
+                        ? "Save & Next"
+                        : "Update Product"}
                   </button>
                 </div>
               </div>
               <p className="mt-3 text-right text-[10px] text-white/25">
-                Press Enter to save · Esc to close
+                {quickEdit
+                  ? "Press Enter to save & open next · Esc to close"
+                  : "Press Enter to save · Esc to close"}
               </p>
             </form>
           </div>

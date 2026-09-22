@@ -3,7 +3,7 @@ import {
   createProduct as createProductRecord,
   deleteProduct as deleteProductRecord,
   getProductUploadFolder,
-  getProduct,
+  getProductDetails,
   listProducts,
   updateProduct as updateProductRecord,
 } from '../services/product.service.js';
@@ -36,7 +36,7 @@ export const getProductById: RequestHandler = async (request, response) => {
       ? 'no-store'
       : 'public, max-age=300, s-maxage=1800, stale-while-revalidate=86400',
   );
-  response.status(200).json({ success: true, product: await getProduct(id) });
+  response.status(200).json({ success: true, ...(await getProductDetails(id)) });
 };
 
 export const createProduct: RequestHandler = async (request, response) => {

@@ -75,24 +75,32 @@ function Home() {
         structuredData={[organizationSchema, websiteSchema]}
       />
       {/* Hero Section */}
-      <section className="relative min-h-screen flex items-center justify-start overflow-hidden">
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
         {/* Ambient Premium Glow Layer */}
         <div className="absolute top-1/3 right-1/4 w-[400px] h-[400px] bg-gold/10 rounded-full blur-[150px] pointer-events-none z-10" />
         <div className="absolute bottom-1/4 right-10 w-[300px] h-[300px] bg-white/5 rounded-full blur-[120px] pointer-events-none z-10" />
 
-        {/* Hero background */}
+        {/* Hero background video */}
         <div className="absolute inset-0 z-0">
-          <img
-            src="https://res.cloudinary.com/gufssbcd/image/upload/v1788566868/deltatrophies/gallery/factory/AA%20Welcome.jpg"
-            alt="Delta Industries trophy manufacturing facility in Jalandhar"
-            width="1920"
-            height="1080"
-            fetchPriority="high"
-            decoding="async"
-            className="w-full h-full object-cover filter brightness-[0.75]"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-darkbg via-darkbg/80 to-darkbg/40" />
-          <div className="absolute inset-0 bg-gradient-to-t from-darkbg via-transparent to-darkbg/30" />
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            preload="auto"
+            poster="https://res.cloudinary.com/gufssbcd/video/upload/so_0,f_jpg,q_auto:best,w_1920/deltatrophies/hero/hero-video.jpg"
+            className="w-full h-full object-cover"
+          >
+            <source
+              src="https://res.cloudinary.com/gufssbcd/video/upload/q_auto:best/deltatrophies/hero/hero-video.mp4"
+              type="video/mp4"
+            />
+            <source
+              src="https://res.cloudinary.com/gufssbcd/video/upload/q_auto:best,f_webm/deltatrophies/hero/hero-video.webm"
+              type="video/webm"
+            />
+          </video>
+          <div className="absolute inset-0 bg-black/10 pointer-events-none" />
         </div>
         {/* Big Background Typography */}
         <div className="absolute right-[-2%] bottom-[12%] select-none pointer-events-none hidden lg:block z-0">
@@ -104,15 +112,13 @@ function Home() {
           </h2>
         </div>
 
-        {/* Hero Grid Container */}
-        <div className="relative z-20 max-w-7xl mx-auto px-6 w-full pt-32 pb-20">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-            {/* Left Content */}
+        {/* Centered hero content */}
+        <div className="relative z-20 mx-auto w-full max-w-5xl px-6 pt-24 pb-24 text-center">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, ease: "easeOut" }}
-              className="lg:col-span-7 max-w-2xl"
+              className="mx-auto flex max-w-4xl flex-col items-center"
             >
               <motion.p
                 initial={{ opacity: 0, letterSpacing: "0.2em" }}
@@ -127,7 +133,7 @@ function Home() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4, duration: 0.6 }}
-                className="text-white text-5xl md:text-6xl font-bold tracking-tight leading-[1.1] mb-6 font-serif"
+                className="text-white text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.1] mb-6 font-serif [text-shadow:0_2px_12px_rgba(0,0,0,0.8)]"
               >
                 Crafting{" "}
                 <span className="text-yellow-400 italic font-normal">
@@ -141,7 +147,7 @@ function Home() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.6, duration: 0.6 }}
-                className="text-white/70 text-base md:text-lg leading-relaxed mb-10 max-w-xl font-light"
+                className="mx-auto max-w-2xl text-white text-base md:text-lg leading-relaxed mb-10 font-light [text-shadow:0_2px_8px_rgba(0,0,0,0.85)]"
               >
                 Crafting symbols of achievement since 1998. From trophy cups and
                 sports awards to corporate mementos, Delta creates the moments
@@ -152,7 +158,7 @@ function Home() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.8, duration: 0.6 }}
-                className="flex gap-4 flex-wrap"
+                className="flex justify-center gap-4 flex-wrap"
               >
                 <Link
                   to="/collections"
@@ -168,14 +174,13 @@ function Home() {
                 </Link>
               </motion.div>
             </motion.div>
-          </div>
         </div>
 
         {/* Scroll Indicator */}
         <motion.div
           animate={{ y: [0, 8, 0] }}
           transition={{ repeat: Infinity, duration: 2 }}
-          className="hidden md:flex absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex-col items-center gap-2"
+          className="hidden md:flex absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex-col items-center gap-2 pointer-events-none"
         >
           <p className="text-white/30 text-xs tracking-widest uppercase">
             Scroll
@@ -413,7 +418,7 @@ function Home() {
             {[
               { number: 27, suffix: "+", label: "Years of Craft" },
               { number: 500, suffix: "+", label: "Bespoke Designs" },
-              { number: 10000, suffix: "+", label: "Honored Laureates" },
+              { number: 10000, suffix: "+", label: "Honoured Laureates" },
               { number: 20, suffix: "+", label: "Cities Served" },
             ].map((stat, index) => (
               <motion.div

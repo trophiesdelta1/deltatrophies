@@ -1,14 +1,22 @@
 import { Link } from "react-router-dom";
 
-function FilterSidebar({ categories, selectedCategory, onCategoryChange }) {
+function FilterSidebar({
+  categories,
+  selectedCategory,
+  onCategoryChange,
+  useButtons = false,
+}) {
+  const CategoryItem = useButtons ? "button" : Link;
+
   return (
     <div className="hidden md:block w-56 shrink-0">
       <h3 className="text-gold text-xs tracking-[0.3em] uppercase mb-4">
         Categories
       </h3>
       <div className="flex flex-col gap-1">
-        <Link
-          to="/collections"
+        <CategoryItem
+          to={useButtons ? undefined : "/collections"}
+          type={useButtons ? "button" : undefined}
           onClick={() => onCategoryChange("all")}
           className={`text-left px-3 py-2 text-sm tracking-wider uppercase transition-colors ${
             selectedCategory === "all"
@@ -17,12 +25,17 @@ function FilterSidebar({ categories, selectedCategory, onCategoryChange }) {
           }`}
         >
           All Products
-        </Link>
+        </CategoryItem>
 
         {categories.map((category) => (
-          <Link
+          <CategoryItem
             key={category.id}
-            to={`/collections?category=${encodeURIComponent(category.slug)}`}
+            to={
+              useButtons
+                ? undefined
+                : `/collections?category=${encodeURIComponent(category.slug)}`
+            }
+            type={useButtons ? "button" : undefined}
             onClick={() => onCategoryChange(category.slug)}
             className={`text-left px-3 py-2 text-sm tracking-wider uppercase transition-colors ${
               selectedCategory === category.slug
@@ -37,7 +50,7 @@ function FilterSidebar({ categories, selectedCategory, onCategoryChange }) {
             >
               {category.product_count}
             </span>
-          </Link>
+          </CategoryItem>
         ))}
       </div>
     </div>

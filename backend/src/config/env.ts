@@ -65,6 +65,28 @@ const environmentSchema = z
         message: 'Cloudinary is required in production',
       });
     }
+    if (
+      values.NODE_ENV === 'production' &&
+      values.APP_ORIGINS.split(',').some((origin) => {
+        try {
+          const url = new URL(origin.trim());
+          return (
+            url.protocol !== 'https:' ||
+            ['localhost', '127.0.0.1'].includes(url.hostname) ||
+            url.pathname !== '/' ||
+            Boolean(url.search || url.hash)
+          );
+        } catch {
+          return true;
+        }
+      })
+    ) {
+      context.addIssue({
+        code: 'custom',
+        path: ['APP_ORIGINS'],
+        message: 'production origins must be public HTTPS origins without paths',
+      });
+    }
   });
 
 const parsedEnvironment = environmentSchema.safeParse(process.env);

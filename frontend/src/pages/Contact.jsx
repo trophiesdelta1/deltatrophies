@@ -52,7 +52,7 @@ function Contact() {
   };
 
   return (
-    <div className="bg-[#0b0c10] text-white min-h-screen selection:bg-gold selection:text-black">
+    <div className="bg-darkbg text-white min-h-screen selection:bg-gold selection:text-black">
       <SeoHead
         title="Contact Delta Industries | Trophy Manufacturer in Jalandhar"
         description="Contact Delta Industries for custom trophy orders, bulk enquiries and dealership information in Jalandhar, Punjab."
